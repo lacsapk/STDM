@@ -151,7 +151,7 @@ ggplot(pca_h@scores, aes(PC1, PC2, colour = dat[,1])) +
         title = "PCA_Hubert") +
   theme_bw() 
 
-### 2.3 Erkenntnis ----
+### 2.3 Ergebnis ----
 
 'Cell_line sind Zellen aus dem labor, welche zur Forschung verwendet werden.
 Sie können nützliche Modelle sein, sind aber laut dem klassischen PCA
@@ -167,3 +167,42 @@ klassischen PCA untergeht. Bei PcaHubert haben diese Ausreisser durch den Median
 einen weniger grossen Einfluss und die Abbildung ist somit representativer.
 
 Bei allen Abbildungen sind Gruppen zu erkennen.'
+
+# 3. UMAP ----
+
+library(umap)
+
+umap <- umap(dat[,-1], input = "data",
+             n_neighbors = 5,         # Mit neighbors zwischen 5 und 10 i.O
+             min_dist = 0.5,
+             random_state = 29)
+
+## Plot mit base R
+
+plot(umap$layout[,1], umap$layout[,2], pch = 20,
+     main = "UMAP", xlab = "Umap1", ylab = "Umap2",
+     col = colours[as.factor(dat$type)])
+
+legend("topright", legend = levels(as.factor(dat[,1])),
+       pch = 20,
+       col = colours,
+       cex = 0.8,
+       pt.cex = 1,
+       bty = "n")
+
+## Plot mit ggplot
+
+colnames(umap$layout) <- c("Umap1", "Umap2")
+
+ggplot(umap$layout, aes(Umap1, Umap2, colour = dat[,1])) +
+  geom_point() +
+  scale_color_manual(values = colours) +
+  labs(colour = "tumor type",
+       title = "UMAP") +
+  theme_bw()
+
+## 3.1 Ergebnis----
+'Es sind 4 klare Unterteilungen erkennbar. Diese sind normale Zellen,
+Zelllinien aus dem Labor, Basal (Triple negative (TN)) und luminal_A, B und HER.
+Obwohl letztere nahe beieinander sind, sind grenzen durch die Farben erkennbar.'
+
