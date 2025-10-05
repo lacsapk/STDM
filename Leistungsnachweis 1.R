@@ -89,6 +89,7 @@ plot(1:length(cum), cum, type = "l",
      col = "red", lwd = 1.5)
 abline(h = 0.8, v = min(which(cum >= 0.8)), col = "grey", lty = 2, lwd = 1.5)
 axis(1, at = min(which(cum >= 0.8)), labels = min(which(cum >= 0.8)))
+grid()
 
 'um 80% der Varianz zu erklären müsste man die ersten 40 Hauptkomponenten verwenden.'
 
@@ -150,6 +151,30 @@ ggplot(pca_h@scores, aes(PC1, PC2, colour = dat[,1])) +
   labs(colour = "Tumor type",
         title = "PCA_Hubert") +
   theme_bw() 
+
+'Robuste PCA zeigt, dass normale Proben eine homogene, von Tumoren klar 
+unterscheidbare Gruppe bilden – und dass diese Abgrenzung erst nach 
+Eliminierung von Verzerrungen (durch Ausreißer/Varianzunterschiede) 
+sichtbar wird.'
+
+### 2.2.1 Orthogonale Distanz
+n <- nrow(dat)
+plot(x = 1:n, y = pca_h@od, pch = 16, col = colours[as.factor(dat[,1])])
+abline(h = pca_h@cutoff.od)
+legend("topright", 
+       legend = levels(as.factor(dat[,1])),
+       col = colours,
+       pch = 20,
+       cex = 0.8,
+       pt.cex = 1,
+       bty = "n")
+
+'Die orthogonale Distanz zeigt, dass sich die cell_line Zellen stark von den
+anderen Zelltypen unterscheiden. In der robusten PCA-Darstellung mit den ersten
+beiden Hauptkomponenten wird dieser Unterschied jedoch nicht klar hervorgehoben
+bzw. sie werden schlecht durch die PCA abgebildet. Ihre Variation könnte
+hauptsächlich in anderen Dimensionen liegen.'
+
 
 ### 2.3 Ergebnis ----
 
