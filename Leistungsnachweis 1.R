@@ -38,7 +38,7 @@ data <- as.data.frame(data)
 
 var <- apply(data[,-c(1,2)], 2, var) # Varianz der Spalten (Gene)
 sorted.var <-  sort(var, decreasing = T)
-keep <- names(sorted.var)[1:2000]
+keep <- names(sorted.var)
 
 dat <- data[ ,c("type", keep)]
 
@@ -46,11 +46,11 @@ str(dat)
 
 ## 1.4 Skalieren? ----
 
-boxplot(dat[,-1]) # nichts erkennbar
+# boxplot(dat[,-1]) # nichts erkennbar (Auslassen)
 
 vars <- apply(dat[,-1], 2, var)
 
-hist(vars, breaks = 100, xlim = c(1, 15),
+hist(vars, breaks = 100, xlim = c(0, 4),
      main = "Verteilung Varianzen",
      xlab = "Varianz")
 abline(v = mean(vars), col = "red", lwd = 1.5, lty = 2)
@@ -62,7 +62,9 @@ legend("topright",
        bty = "n")
 
 ### 1.4.1 nein ----
-'Gene wurden in derselben Einheit gemessen, was gegen eine Skalierung sprechen würde.'
+'Gene wurden in derselben Einheit gemessen, was gegen eine Skalierung sprechen würde.
+Auch ist die Varianz der einzelnen Variablen ziemlich ähnlich'
+
 
 ### 1.4.2 ja ----
 'Wenige Gene weisen eine viel grössere Varianz auf als andere.
@@ -75,8 +77,7 @@ SW01 40/51: Bei unsicherheit ist es besser zu standardisieren'
 ## 2.1 prcomp() ----
 
 pca <- prcomp(dat[,-1], scale. = T)
-pca <- prcomp(dat[,-1], scale. = F) # Vermutlich besser 38 PC's bis 0.8 erklärt 
-                                    # statt 40 und plot minimal klarer
+pca <- prcomp(dat[,-1], scale. = F) # Ohne Skalierung Übersichtlicher
                           
 ### Anteil der Varianz
 
@@ -91,7 +92,7 @@ abline(h = 0.8, v = min(which(cum >= 0.8)), col = "grey", lty = 2, lwd = 1.5)
 axis(1, at = min(which(cum >= 0.8)), labels = min(which(cum >= 0.8)))
 grid()
 
-'um 80% der Varianz zu erklären müsste man die ersten 40 Hauptkomponenten verwenden.'
+'um 80% der Varianz zu erklären müsste man die ersten 58 Hauptkomponenten verwenden.'
 
 ### Plot base R
 
@@ -153,13 +154,13 @@ ggplot(pca_h@scores, aes(PC1, PC2, colour = dat[,1])) +
   theme_bw() 
 
 'Robuste PCA zeigt, dass normale Proben eine homogene, von Tumoren klar 
-unterscheidbare Gruppe bilden – und dass diese Abgrenzung erst nach 
-Eliminierung von Verzerrungen (durch Ausreißer/Varianzunterschiede) 
+unterscheidbare Gruppe bilden und dass diese Abgrenzung erst nach 
+Eliminierung von Verzerrungen (durch Ausreisser/Varianzunterschiede) 
 sichtbar wird.'
 
-### 2.2.1 Orthogonale Distanz
+### 2.2.1 Orthogonale Distanz ----
 n <- nrow(dat)
-plot(x = 1:n, y = pca_h@od, pch = 16, col = colours[as.factor(dat[,1])])
+plot(x = 1:n, y = pca_h@od, pch = 20, col = colours[as.factor(dat[,1])])
 abline(h = pca_h@cutoff.od)
 legend("topright", 
        legend = levels(as.factor(dat[,1])),
@@ -179,17 +180,19 @@ hauptsächlich in anderen Dimensionen liegen.'
 ### 2.3 Ergebnis ----
 
 'Cell_line sind Zellen aus dem labor, welche zur Forschung verwendet werden.
-Sie können nützliche Modelle sein, sind aber laut dem klassischen PCA
-nicht gleich wie Patientenproben.
+Sie können nützliche Modelle sein, das klassischen PCA lässt vermuten, dass diese 
+nicht gleich wie Patientenproben sind.
 
-Wenn wir PcaHubert verwenden (robustere PCA-Methode mit Median), sieht es jedoch
-so aus als sein die Cell_line doch sehr ähnlich zu den basal Zellen, dafür unterscheiden
-sich die normalen Zellen grob von den Krebszellen.
+Die orthogonale Distanz zeigt, dass sich die cell_line Zellen stark von den
+anderen Zelltypen unterscheiden. In der robusten PCA-Darstellung mit den ersten
+beiden Hauptkomponenten wird dieser Unterschied jedoch nicht klar hervorgehoben
+bzw. sie werden schlecht durch die PCA abgebildet. Ihre Variation könnte
+hauptsächlich in anderen Dimensionen liegen.
 
-Wir Vermuten, dass die Cell_line in den Genen viele Ausreisser beinhaltet,
+Wir Vermuten, dass die Cell_line in den Genen viele extreme Werte beinhaltet,
 was dazu geführt hat, dass der Unterschied zwischen normalen und Krebszellen beim
-klassischen PCA untergeht. Bei PcaHubert haben diese Ausreisser durch den Median
-einen weniger grossen Einfluss und die Abbildung ist somit representativer.
+klassischen PCA untergeht. Bei PcaHubert haben diese Ausreisser durch eine robustere
+Berechnung der Varianz weniger grossen Einfluss und die Abbildung ist somit representativer.
 
 Bei allen Abbildungen sind Gruppen zu erkennen.'
 
@@ -198,7 +201,7 @@ Bei allen Abbildungen sind Gruppen zu erkennen.'
 library(umap)
 
 umap <- umap(dat[,-1], input = "data",
-             n_neighbors = 5,         # Mit neighbors zwischen 5 und 10 i.O
+             n_neighbors = 7,         # Mit neighbors zwischen 5 und 10 i.O
              min_dist = 0.5,
              random_state = 29)
 
@@ -227,7 +230,7 @@ ggplot(umap$layout, aes(Umap1, Umap2, colour = dat[,1])) +
   theme_bw()
 
 ## 3.1 Ergebnis----
-'Es sind 4 klare Unterteilungen erkennbar. Diese sind normale Zellen,
-Zelllinien aus dem Labor, Basal (Triple negative (TN)) und luminal_A, B und HER.
-Obwohl letztere nahe beieinander sind, sind grenzen durch die Farben erkennbar.'
+'
+Es sind 3 klare Cluster zu erkennen, wobei man beim Cluster der Tumore
+darüber diskutieren könnte ob es sich um einzele Gruppen handelt. 
 
