@@ -79,7 +79,7 @@ SW01 40/51: Bei unsicherheit ist es besser zu standardisieren'
 pca <- prcomp(dat[,-1], scale. = T)
 pca <- prcomp(dat[,-1], scale. = F) # Ohne Skalierung Übersichtlicher
                           
-### Anteil der Varianz
+### 2.1.1 Anteil der Varianz ----
 
 var <- pca$sdev^2
 cum <- cumsum(var)/sum(var)
@@ -93,6 +93,19 @@ axis(1, at = min(which(cum >= 0.8)), labels = min(which(cum >= 0.8)))
 grid()
 
 'um 80% der Varianz zu erklären müsste man die ersten 58 Hauptkomponenten verwenden.'
+
+### 2.1.2 Welches Gene trägt am meisten zu PC1 bei ----
+
+rot <- abs(pca$rotation[,1]) / sum(abs(pca$rotation[,1])) # % Anteil rotation
+rot <- sort(rot, decreasing = T)
+
+toprot <- rot[1:10] # Top 10 Gene
+
+barplot(toprot,
+        las = 2,
+        main = "Top 10 Gene in PC1",
+        ylim = c(0, 0.00035))
+grid()
 
 ### Plot base R
 
@@ -177,6 +190,21 @@ bzw. sie werden schlecht durch die PCA abgebildet. Ihre Variation könnte
 hauptsächlich in anderen Dimensionen liegen.'
 
 
+### 2.2.2 Welches Gene hat am meisten einfluss auf PC1----
+
+options(scipen = 999) # Dezimal als ylim
+
+anteilload <- abs(pca_h@loadings[,1]) / sum(abs(pca_h@loadings[,1]))
+anteilload <- sort(anteilload, decreasing = T)
+
+topload <- anteilload[1:10]
+
+barplot(topload,
+        las = 2,
+        main = "Top 10 Genes in PC1",
+        ylim = c(0, 0.00045))
+grid()
+
 ### 2.3 Ergebnis ----
 
 'Cell_line sind Zellen aus dem labor, welche zur Forschung verwendet werden.
@@ -233,4 +261,41 @@ ggplot(umap$layout, aes(Umap1, Umap2, colour = dat[,1])) +
 '
 Es sind 3 klare Cluster zu erkennen, wobei man beim Cluster der Tumore
 darüber diskutieren könnte ob es sich um einzele Gruppen handelt. 
+'
+
+# 4. T-Sne ----
+
+library(Rtsne)
+
+pca <- prcomp(dat[,-1], scale = F )
+pca <- pca$x[,1:151]
+
+set.seed(120)
+tsne <- Rtsne(pca, dims = 2, is_distance = F,
+              pca = F,  # Warum funktioniert es nicht bei pca = T?
+              perplexity = 20, # Zwischen 10 und 20 ok
+              max_iter = 1000)
+
+tsne <- as.data.frame(tsne$Y)
+
+# Plot
+
+plot(tsne$V1, tsne$V2, pch = 20, 
+     col = colours[as.factor(dat[,1])], main = "T-SNE")
+legend("bottomleft", legend = levels(as.factor(dat[,1])),
+       bty = "n",
+       cex = 0.8,
+       col = colours,
+       pch = 20)
+
+## GGplot
+
+library(ggplot2)
+
+ggplot(tsne, aes(V1, V2, colour = dat[,1])) +
+  geom_point() +
+  scale_color_manual(values = colours) +
+  labs(title = "T-SNE",
+       colour = "Tumor Types") +
+  theme_bw()
 
