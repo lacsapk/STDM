@@ -81,6 +81,8 @@ pca <- prcomp(dat[,-1], scale. = F) # Ohne Skalierung Übersichtlicher
                           
 ### 2.1.1 Anteil der Varianz ----
 
+summary(pca)
+
 var <- pca$sdev^2
 cum <- cumsum(var)/sum(var)
 
@@ -106,6 +108,7 @@ barplot(toprot,
         main = "Top 10 Gene in PC1",
         ylim = c(0, 0.00035))
 grid()
+
 
 ### Plot base R
 
