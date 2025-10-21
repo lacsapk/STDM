@@ -252,6 +252,11 @@ fviz_mclust(mc, "BIC") # Optimal 5 clusters
 
 plot(mc, what = "classification")
 
+colnames(mc$data) <- c("x", "y")
+mc$data
+
+fviz_mclust(mc, "classification")
+
 table(pam = mc$classification, # 8 fehler aber 5 cluster 
       actual = data$type)
 
