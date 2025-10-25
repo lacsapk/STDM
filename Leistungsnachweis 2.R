@@ -55,6 +55,9 @@ plot(umap$layout[,1], umap$layout[,2], pch = 20,
      main = "UMAP", xlab = "Umap1", ylab = "Umap2",
      col = kmean$cluster)
 
+table(kmeans = kmean$cluster, # 13 fehler
+      actual = data$type)
+
 'Ohne Dimensionsreduktion würden 2 Cluster empfohlen werden, wobei es so scheint als ob
 normal und luminal_A und B ein Cluster bilden würden (Weniger aggressive krebszellen)'
 
@@ -95,6 +98,7 @@ table(kmeans = kmean$cluster, # 25 fehler
 
 
 #### 3.1.1.4 Mittlere Silhouettenbreite ----
+library(cluster)
 
 kmeans <- kmeans(dat, centers=2)
 plot(silhouette(x=kmeans$cluster, dist=dist(dat)))
@@ -187,10 +191,18 @@ Dafür ist das Ergebniss mit den Daten der Dimensionsreduktion besser (umgekehrt
 ### 3.3.1 optimal k ----
 
 # Rohdaten
-hi <- hclust(dist(dat), method = "ward.D2")
+hi.ward <- hclust(dist(dat), method = "ward.D2") # Most Variance
+hi.single <- hclust(dist(dat), method = "single") # kürzeste Distanz
+hi.complete <- hclust(dist(dat), method = "complete") # längste Distanz
+hi.avg <- hclust(dist(dat), method = "average")
 
-plot(hi)
-rect.hclust(hi, h = 400) # mit dieser Methode hätte ich mich für 5 cluster entschieden.
+plot(hi.ward)
+rect.hclust(hi.ward, h = 400) # mit dieser Methode hätte ich mich für 5 cluster entschieden.
+
+# ungeeignet
+plot(hi.single)
+plot(hi.complete)
+plot(hi.avg)
 
 # Daten dimensionsreduktion
 hi_d <- hclust(dist(umap$layout), method = "ward.D2")
@@ -200,7 +212,7 @@ rect.hclust(hi_d, h = 20) # Auch hier wären es 5 cluster
 
 ### 3.3.2 clusteren ----
 
-hi.c <- cutree(hi, k = 6)
+hi.c <- cutree(hi, k = 5)
 
 plot(umap$layout, pch = 20,
      main = "UMAP", xlab = "Umap1", ylab = "Umap2",
@@ -211,7 +223,7 @@ table(hi = hi.c, # 14 fehler
 
 '--------------------------------------------------------'
 
-hi_d.c <- cutree(hi_d, k = 6)
+hi_d.c <- cutree(hi_d, k = 5)
 
 plot(umap$layout, pch = 20,
      main = "UMAP", xlab = "Umap1", ylab = "Umap2",
@@ -220,9 +232,16 @@ plot(umap$layout, pch = 20,
 table(hi = hi_d.c, # 15 fehler
       actual = data$type)
 
+### 3.3.3 Mittlere Silhouettenbreite ----
+library(cluster)
+
+plot(silhouette(x=hi.c, dist=dist(dat)))
+
 ### Erkenntnisse ----
 'Man erhält mit Rohdaten und Daten der Dimensionsreduktion zumindest 5 cluster empfohlen.
-Und auch beim Clustern schneiden beide Daten etwa gleich gut ab.'
+Und auch beim Clustern schneiden beide Daten etwa gleich gut ab, wobei luminal_A und B
+zusammen in einem cluster sind. Die mittlere Silhouettenbreite sagt, dass es sich um
+eine ungeeignete Struktur handelt.'
 
 ## 3.4 DBscan ----
 
@@ -264,7 +283,10 @@ table(dbscan = db_d$cluster + 1,
 'Hierbei ist die Methode mit den Daten der Dimensionsreduktion genauer.
 Diese gibt 6 cluster und mit den rohdaten wären es nur 2 cluster. 
 Bei dbscan gibt es viel spielraum mit den parametern, also ist bestimmt noch
-eine bessere Lösung möglich.'
+eine bessere Lösung möglich.
+
+Interpretation: Durch UMAP wurden die Punkte besser separatiert, weshalb mit
+den Dimensionsreduzierten Daten mehr Cluster entstanden sind.'
 
 ## 3.5 MClust ----
 
@@ -284,14 +306,21 @@ fviz_mclust(mc, "BIC") # Optimal 5 clusters
 
 plot(mc, what = "classification")
 
+# 2. Visualisierung
 colnames(mc$data) <- c("x", "y")
 mc$data
 
-fviz_mclust(mc, "classification")
+fviz_mclust(mc, "classification",
+            geom = "point")
 
 table(pam = mc$classification, # 8 fehler aber 5 cluster 
       actual = data$type)
 
-### Erkenntnisse ----
+# Unsicherheit
+fviz_mclust(mc, "uncertainty")
 
+### Erkenntnisse ----
+'Hierbei musste der Dimensionsreduzierte Datensatz verwendet werden. 
+mclust erstellte dabei 5 cluster, wobei luminal A und B in einem Cluster sind.
+Nur bei basal, HER und limunial B kam es zu "fehler".'
 
