@@ -77,7 +77,7 @@ table(kmeans = kmean$cluster, # 13 fehler
 library(factoextra)
 
 fviz_nbclust(umap$layout, kmeans, method = "wss", k.max = 20) # Kein klarer ellbow
-fviz_nbclust(umap$layout, kmeans, method = "silhouette", k.max = 20) # 2 cluster
+fviz_nbclust(umap$layout, kmeans, method = "silhouette", k.max = 20) # 5 cluster
 
 'Mit den Dimensionsreduktion werden schonmal 5 cluster statt nur 2 empfohlen'
 
@@ -92,6 +92,23 @@ plot(umap$layout[,1], umap$layout[,2], pch = 20,
 
 table(kmeans = kmean$cluster, # 25 fehler
       actual = data$type)
+
+
+#### 3.1.1.4 Mittlere Silhouettenbreite ----
+
+kmeans <- kmeans(dat, centers=2)
+plot(silhouette(x=kmeans$cluster, dist=dist(dat)))
+
+'Bei k=2 -> Mittlere Silhouettenbreite = 0.14'
+
+kmeans <- kmeans(dat, centers=6)
+plot(silhouette(x=kmeans$cluster, dist=dist(dat)))
+
+'Bei k=6 -> Mittlere Silhouettenbreite = 0.11'
+
+'Beide weisen eine sehr ungeeignete Struktur auf (< 0.25). Da selbst mit
+Kenntnissen über die wahre Anzahl Gruppen keine guten Strukturen geschaffen
+werden können, scheint K-Means ungeeignet für diesen Datensatz zu sein.'
 
 #### Erkenntnisse ----
 
@@ -142,6 +159,21 @@ plot(umap$layout, pch = 20,
 
 table(pam = pam$clustering, # 13 fehler
       actual = data$type)
+
+### 3.2.3 Mittlere Silhouettenbreite ----
+
+pam <- pam(dat, k=4)
+plot(silhouette(x=pam$clustering, dist=dist(dat)))
+
+'Bei k=2 -> Mittlere Silhouettenbreite = 0.13'
+
+pam <- pam(dat, k=6)
+plot(silhouette(x=pam$clustering, dist=dist(dat)))
+
+'Bei k=6 -> Mittlere Silhouettenbreite = 0.10'
+
+'Ähnliche mittlere Silhouettenbreiten wie bei K-Means. Dennoch immernoch
+ungeeignete Struktur.'
 
 ### Erkenntnisse ----
 
