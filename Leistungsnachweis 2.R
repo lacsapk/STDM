@@ -212,7 +212,7 @@ rect.hclust(hi_d, h = 20) # Auch hier wären es 5 cluster
 
 ### 3.3.2 clusteren ----
 
-hi.c <- cutree(hi, k = 5)
+hi.c <- cutree(hi.ward, k = 5)
 
 plot(umap$layout, pch = 20,
      main = "UMAP", xlab = "Umap1", ylab = "Umap2",
@@ -260,6 +260,7 @@ abline(h = 0.8, col = "red")
 ### 3.4.2 clusteren ----
 
 db <- dbscan(dat, eps = 160, minPts = 5)
+?dbscan
 
 plot(umap$layout, pch = 20,
      main = "UMAP", xlab = "Umap1", ylab = "Umap2",
@@ -324,3 +325,76 @@ fviz_mclust(mc, "uncertainty")
 mclust erstellte dabei 5 cluster, wobei luminal A und B in einem Cluster sind.
 Nur bei basal, HER und limunial B kam es zu "fehler".'
 
+# pcaHubert Daten (80% Variance) ----
+
+## PCAHubert wegen Ausreissern
+library(MASS)
+library(rrcov)
+
+str(dat)
+
+pcaHub <- PcaHubert(dat, kmax = 151)
+summary(pcaHub) # bis und mit PC58 = 80% Varianz
+
+# Mclust mit daten von pcaHub
+library(mclust)
+library(factoextra)
+
+set.seed(17)
+mc <- Mclust(pcaHub@scores[,1:3])
+
+mc$modelName
+fviz_mclust(mc, "BIC") # Optimal 5 clusters
+
+##  Visualisierung
+fviz_mclust(mc, "classification",
+            geom = "point")
+
+table(pam = mc$classification,
+      actual = data$type)
+
+# Passt es?
+library(cluster)
+plot(silhouette(mc$classification,
+                dist = dist(pcaHub@scores[,1:3])))
+
+'Das Ergebnis mit den PCs ist abgesehen von 3 PC nicht gut.
+GPT:
+„Mclust funktioniert in hohen Dimensionen schlecht, weil die Schätzung der 
+Kovarianzmatrizen instabil wird und die Abstände zwischen Punkten in 
+hochdimensionalen Räumen kaum noch sinnvolle Struktur enthalten. 
+Dadurch verliert das Modell die Fähigkeit, echte Cluster zu unterscheiden.“'
+
+# prcomb ----
+
+str(dat)
+
+pca <- prcomp(dat)
+
+summary(pca) # 80% auch bei PC58
+
+pca <- pca$x[,1:58]
+
+# Mclust mit daten von prcomb
+library(mclust)
+library(factoextra)
+
+set.seed(17)
+mc <- Mclust(pca[,1:10])
+
+mc$modelName
+fviz_mclust(mc, "BIC") 
+
+mc$data
+
+##  Visualisierung
+fviz_mclust(mc, "classification",
+            geom = "point")
+
+table(pam = mc$classification,
+      actual = data$type)
+
+# Passt es?
+library(cluster)
+plot(silhouette(mc$classification,
+                dist = dist(pcaHub@scores[,1:3])))
