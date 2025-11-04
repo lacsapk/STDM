@@ -336,15 +336,20 @@ str(dat)
 pcaHub <- PcaHubert(dat, kmax = 151)
 summary(pcaHub) # bis und mit PC58 = 80% Varianz
 
+plot(pcaHub@scores[,1], pcaHub@scores[,2], col = as.factor(data$type))
+
 # Mclust mit daten von pcaHub
 library(mclust)
 library(factoextra)
 
 set.seed(17)
-mc <- Mclust(pcaHub@scores[,1:3])
+mc <- Mclust(pcaHub@scores[,]) # am besten mit ersten 3, 5 pc's
+                                   # bei 20 pc's unterscheided das modell hauptsächlich aus, normal-zellen, cell_line und Krebszellen
+                                   # bei 40 pc's wird unter natürlichen-zellen und synthetischen zellen unterschieden
+                                   # bei allen pc's bis 80% der varinaz wird kein unterschied mehr festgestellt
 
 mc$modelName
-fviz_mclust(mc, "BIC") # Optimal 5 clusters
+fviz_mclust(mc, "BIC")# Optimal 5 clusters
 
 ##  Visualisierung
 fviz_mclust(mc, "classification",
@@ -374,6 +379,8 @@ pca <- prcomp(dat)
 summary(pca) # 80% auch bei PC58
 
 pca <- pca$x[,1:58]
+
+plot(pca[,1], pca[,2])
 
 # Mclust mit daten von prcomb
 library(mclust)
