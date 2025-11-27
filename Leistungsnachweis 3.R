@@ -233,8 +233,104 @@ calibration_plot(pred2,
                  nTiles = 10)
 
 'In bezug auf die Kalibrierung, sehen wir, dass das Modell bei Wahrscheinlichkeiten unter
-50% die Wahrscheinlichkeit unterschätzt, es liegt also öfters richtig als das Modell denkt.
-Jedoch ist es sich dann bei höheren Wahrscheinlichkeiten etwas zu sicher (minimal)'
+50% die Wahrscheinlichkeit überschätzt, es liegt also öfters falsch als das Modell denkt.
+Bei den höheren Wahrscheinlichkeiten besonders knapp über 50% dürfe sich das Modell
+gerne etwas sicherer sein, da es öfters richtig liegt.'
+
+# 7. Interpretation ----
+
+rf_fit2 <- fit(rf_final, train_set)
+
+# Variable importance
+rf_fit_parsnip <- extract_fit_parsnip(rf_fit2)
+
+predict_class <- function(object, newdata) {
+  predict(object, newdata)$.pred_class
+}
+
+library(vip)
+
+vi_rf <- vi(object = rf_fit_parsnip,
+            train = test_set,
+            target = "HeartDisease",
+            method = "permute",
+            metric = "accuracy",
+            pred_wrapper = predict_class,
+            nsim = 5)
+
+vip(vi_rf)
+
+# ICE der Bedeutensten
+
+library(pdp)
+
+# Oldpeak
+rf_par <- partial(rf_fit_parsnip,
+                  pred.var = "Oldpeak",
+                  type = "classification",
+                  which.class = "1",
+                  prob = T, ice = T,
+                  train = test_set)
+
+plotPartial(rf_par)
+
+# ST_Slope
+rf_par <- partial(rf_fit_parsnip,
+                  pred.var = "ST_Slope",
+                  type = "classification",
+                  which.class = "1",
+                  prob = T, ice = T,
+                  train = test_set)
+
+plotPartial(rf_par)
+
+# Cholesterol
+rf_par <- partial(rf_fit_parsnip,
+                  pred.var = "Cholesterol",
+                  type = "classification",
+                  which.class = "1",
+                  prob = T, ice = T,
+                  train = test_set)
+
+plotPartial(rf_par)
+range(test_set$Cholesterol)
+hist(test_set$Cholesterol, breaks = 50)
+# Es sieht so aus, als seien Viele Messfehler bei Cholesterol vorhanden!!!
+
+# Variance Importance mit ICE
+
+library(vip)
+
+feature_names <- setdiff(names(test_set), "HeartDisease")
+
+res_vi <- vi(object = rf_fit_parsnip,
+             train = test_set,
+             method = "firm",
+             target = "HeartDisease",
+             metric = "accuracy",
+             pred_wrapper = predict_class,
+             feature_names = feature_names, 
+             nsim = 5)
+
+vip(res_vi)
+
+# ICE ChestPain
+rf_par <- partial(rf_fit_parsnip,
+                  pred.var = "ChestPainType",
+                  type = "classification",
+                  which.class = "1",
+                  prob = T, ice = T,
+                  train = test_set)
+
+plotPartial(rf_par)
+
+'Bei beiden Methoden permutation und varianz in ICE sind Oldpeak und ST_Slope am
+Wichtigsten, ST_slope muss jedoch nicht aussagekräftig sein, da es eine kategorielle 
+Variable ist (Je nach kategorien kann ein Wechsel der Kategorie grosse oder kleine Auswirkungen haben).
+
+ST_slope macht sinn, dass diese am wichtigsten ist, laut google handelt es sich dabei auch
+um das was bei einem EKG mitgemessen und von bedeutung ist (was es genau ist nicht verstanden.)
+'
 
 # Verbesserung ----
 
